@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>vue-crud</title>
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <style>
+        th{
+            cursor: pointer;
+        }
+        th:last-child{
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="col-md-6 col-md-offset-3">
+        <h1>Vue crud</h1>
+        <div id="app">
+            <table class="table table-hover" v-cloak>
+                <thead>
+                <tr>
+                    <th class="text-right" @click="sortBy('id')">序号</th>
+                    <th class="text-right" @click="sortBy('name')">书名</th>
+                    <th class="text-right" @click="sortBy('author')">作者</th>
+                    <th class="text-right" @click="sortBy('price')">价格</th>
+                    <th class="text-right">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="book in books | orderBy sortParam sortOrder">
+                    <td class="text-right">{{book.id}}</td>
+                    <td class="text-right">{{book.name}}</td>
+                    <td class="text-right">{{book.author}}</td>
+                    <td class="text-right">{{book.price}}</td>
+                    <td class="text-right">
+                        <button type="button" class="btn" :class="$index % 2 ? 'btn-danger' : 'btn-success' " @click="delBook(book)">删除</button>
+                    </td>
+                    <td class="text-right">
+                        <button type="button" class="btn" :class="$index % 2 ? 'btn-danger' : 'btn-success' " @click="updateBook(book)">修改</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div>
+                <h4>总价:{{sum}}</h4></td>
+            </div>
+            <div id="add-book">
+                <legend>添加书籍</legend>
+                <div class="form-group">
+                    <label>书名</label>
+                    <input type="text" class="form-control" v-model="book.name">
+                </div>
+                <div class="form-group">
+                    <label>作者</label>
+                    <input type="text" class="form-control" v-model="book.author">
+                </div>
+                <div class="form-group">
+                    <label>价格</label>
+                    <input type="text" class="form-control" v-model="book.price">
+                </div>
+                <template v-if="flag">
+
+                    <button class="btn btn-primary btn-block" @click="handleBook(book)">添加</button>
+                </template>
+                <template v-else="flag">
+
+                    <button class="btn btn-primary btn-block" @click="handleBook(book)">修改</button>
+                </template>
+            </div>
+            <br>
+        </div>
+    </div>
+</div>
+</body>
+<script src="../js/lib/vue.min.js"></script>
+<script src="../js/lib/vue-resource.min.js"></script>
+<script>
+    var vm = new Vue({
+        el:"#app",
+        ready:function () {
+            this.$http.get("../data/books.json")
+                    .then(function (response) {
+                        // success callback
+                        this.$set("books",response.data);
+                    },function (response) {
+                        //error callback
+                        console.log(response.status());
+                    })
+        },
+        data:{
+            sortParam: '',
+            sortOrder:1,
+            flag:true,
+            books:'',
+            book: {
+                author: '',
+                name: '',
+                price: ''
+            },
+            editBook:null
+        },
+        computed:{
+            sum:function () {
+                var totalPrice = 0;
+                for(var i=0;i<this.books.length;i++){
+                    totalPrice+=Number(this.books[i].price);
+                }
+                return totalPrice;
+            }
+        },
+        methods:{
+            delBook:function (book) {
+                this.books.$remove(book);
+            },
+            handleBook:function (bk) {
+                if(bk.id == undefined){
+                    //添加记录
+                    this.book.id = this.books.length+1;
+                    this.books.push(this.book);
+                    this.book = '';
+                }else{
+                    //修改
+                    //this.book = bk;
+                    Object.assign(this.editBook, bk);
+                    this.book='';
+                    this.flag = !this.flag;
+                }
+            },
+            updateBook:function (bk) {
+                this.editBook = bk;
+                this.book = Object.assign({}, bk);
+                this.flag = !this.flag;
+            },
+            sortBy: function(sortParam) {
+                if(this.sortParam=sortParam){
+                    this.sortOrder = -this.sortOrder;
+                    return;
+                }
+                this.sortParam = sortParam;
+                this.sortOrder =1//默认正序排序
+            }
+        }
+    })
+
+</script>
+</html>
