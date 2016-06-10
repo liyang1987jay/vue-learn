@@ -6,10 +6,11 @@
     <link rel="stylesheet" href="../css/base.css">
     <link rel="stylesheet" href="../css/bootstrap.min.css">
     <style>
-        th{
+        th {
             cursor: pointer;
         }
-        th:last-child{
+
+        th:last-child {
             cursor: default;
         }
     </style>
@@ -36,10 +37,14 @@
                     <td class="text-right">{{book.author}}</td>
                     <td class="text-right">{{book.price}}</td>
                     <td class="text-right">
-                        <button type="button" class="btn" :class="$index % 2 ? 'btn-danger' : 'btn-success' " @click="delBook(book)">删除</button>
+                        <button type="button" class="btn" :class="$index % 2 ? 'btn-danger' : 'btn-success' "
+                                @click="delBook(book)">删除
+                        </button>
                     </td>
                     <td class="text-right">
-                        <button type="button" class="btn" :class="$index % 2 ? 'btn-danger' : 'btn-success' " @click="updateBook(book)">修改</button>
+                        <button type="button" class="btn" :class="$index % 2 ? 'btn-danger' : 'btn-success' "
+                                @click="updateBook(book)">修改
+                        </button>
                     </td>
                 </tr>
                 </tbody>
@@ -49,26 +54,33 @@
             </div>
             <div id="add-book">
                 <legend>添加书籍</legend>
-                <div class="form-group">
-                    <label>书名</label>
-                    <input type="text" class="form-control" v-model="book.name">
-                </div>
-                <div class="form-group">
-                    <label>作者</label>
-                    <input type="text" class="form-control" v-model="book.author">
-                </div>
-                <div class="form-group">
-                    <label>价格</label>
-                    <input type="text" class="form-control" v-model="book.price">
-                </div>
-                <template v-if="flag">
+                <form class="form-horizontal" id="form1">
+                    <div class="form-group">
+                        <label for="book_name" class="col-sm-2 control-label">书名</label>
+                        <div class="col-sm-10">
+                            <input type="text" name="book_name" class="form-control" v-model="book.name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="book_author" class="col-sm-2 control-label">作者</label>
+                        <div class="col-sm-10">
+                            <input type="text" name="book_author" class="form-control" v-model="book.author">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="book_price" class="col-sm-2 control-label">价格</label>
+                        <div class="col-sm-10">
+                            <input type="text" name="book_price" class="form-control" v-model="book.price">
+                        </div>
+                    </div>
+                    <template v-if="flag">
+                        <button class="btn btn-primary btn-block" @click="handleBook(book)">添加</button>
+                    </template>
+                    <template v-else="flag">
 
-                    <button class="btn btn-primary btn-block" @click="handleBook(book)">添加</button>
-                </template>
-                <template v-else="flag">
-
-                    <button class="btn btn-primary btn-block" @click="handleBook(book)">修改</button>
-                </template>
+                        <button class="btn btn-primary btn-block" @click="handleBook(book)">修改</button>
+                    </template>
+                </form>
             </div>
             <br>
         </div>
@@ -77,73 +89,122 @@
 </body>
 <script src="../js/lib/vue.min.js"></script>
 <script src="../js/lib/vue-resource.min.js"></script>
+<script src="//cdn.bootcss.com/jquery/2.2.3/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/jquery-validate/1.15.0/jquery.validate.min.js"></script>
+<script src="../js/lib/layer/layer.js"></script>
 <script>
     var vm = new Vue({
-        el:"#app",
-        ready:function () {
+        el: "#app",
+        ready: function () {
             this.$http.get("../data/books.json")
                     .then(function (response) {
                         // success callback
-                        this.$set("books",response.data);
-                    },function (response) {
+                        this.$set("books", response.data);
+                    }, function (response) {
                         //error callback
                         console.log(response.status());
                     })
         },
-        data:{
+        data: {
             sortParam: '',
-            sortOrder:1,
-            flag:true,
-            books:'',
+            sortOrder: 1,
+            flag: true,
+            books: '',
             book: {
                 author: '',
                 name: '',
                 price: ''
             },
-            editBook:null
+            editBook: null
         },
-        computed:{
-            sum:function () {
+        computed: {
+            sum: function () {
                 var totalPrice = 0;
-                for(var i=0;i<this.books.length;i++){
-                    totalPrice+=Number(this.books[i].price);
+                for (var i = 0; i < this.books.length; i++) {
+                    totalPrice += Number(this.books[i].price);
                 }
                 return totalPrice;
             }
         },
-        methods:{
-            delBook:function (book) {
-                this.books.$remove(book);
+        methods: {
+            delBook: function (book) {
+                var self = this;
+                layer.open({
+                    content: "确定删除吗?",
+                    yes: function (index) {
+                        self.books.$remove(book);
+                        layer.close(index);
+                    }
+                })
+
             },
-            handleBook:function (bk) {
-                if(bk.id == undefined){
-                    //添加记录
-                    this.book.id = this.books.length+1;
-                    this.books.push(this.book);
-                    this.book = '';
-                }else{
+            handleBook: function (bk) {
+                if (bk.id == undefined) {
+                    if (validate.checkForm()) {
+                        //添加记录
+                        this.book.id = this.books.length + 1;
+                        this.books.push(this.book);
+                        this.book = '';
+                    }
+                } else {
                     //修改
                     //this.book = bk;
-                    Object.assign(this.editBook, bk);
-                    this.book='';
-                    this.flag = !this.flag;
+                    //if (validate.checkForm()) {
+                        Object.assign(this.editBook, bk);
+                        this.book = '';
+                        this.flag = !this.flag;
+                    //}
                 }
             },
-            updateBook:function (bk) {
+            updateBook: function (bk) {
                 this.editBook = bk;
                 this.book = Object.assign({}, bk);
                 this.flag = !this.flag;
             },
-            sortBy: function(sortParam) {
-                if(this.sortParam=sortParam){
+            sortBy: function (sortParam) {
+                if (this.sortParam = sortParam) {
                     this.sortOrder = -this.sortOrder;
                     return;
                 }
                 this.sortParam = sortParam;
-                this.sortOrder =1//默认正序排序
+                this.sortOrder = 1//默认正序排序
             }
         }
     })
+    var validate = {
+        checkForm: function () {
+            $("#form1").validate({
+                onsubmit: true,
+                rules: {
+                    book_name: "required",
+                    book_author: "required",
+                    book_price: "required",
+                },
+                messages: {
+                    book_name: "请填写书名",
+                    book_author: "请填写作者",
+                    book_price: "请填写价格",
+                },
+                errorElement: "em",
+                errorPlacement: function (error, element) {
+                    error.addClass("help-block");
 
+                    if (element.prop("type") === "checkbox") {
+                        error.insertAfter(element.parent("label"));
+                    } else {
+                        error.insertAfter(element);
+                    }
+                },
+                highlight: function (element, errorClass, validClass) {
+                    $(element).addClass("has-error").removeClass("has-success");
+                    $(element).parents(".col-sm-10").addClass("has-error").removeClass("has-success");
+                },
+                unhighlight: function (element, errorClass, validClass) {
+                    $(element).addClass("has-success").removeClass("has-error");
+                    $(element).parents(".col-sm-10").addClass("has-success").removeClass("has-error");
+                }
+            })
+        }
+    }
 </script>
 </html>
